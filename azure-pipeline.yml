@@ -62,10 +62,6 @@ jobs:
           publishLocation: 'Container'
         displayName: 'Publish Artifacts'
 
-            # Pull the latest code and deploy
-            cd /var/www/laragym
-            git pull origin main  # Replace 'main' with the branch you are deploying from
-
             # Set correct permissions on the server
             sudo chown -R www-data:www-data /var/www/laragym
             sudo chmod -R 775 /var/www/laragym/storage /var/www/laragym/bootstrap/cache
