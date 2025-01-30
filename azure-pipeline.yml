@@ -4,7 +4,7 @@ trigger:
       - main  # Specify your branch here
 
 pool:
-  name: 'MyAgentPool'  # Use the agent pool you created
+  name: 'windows'  # Use the agent pool you created
 
 steps:
   - powershell: |
