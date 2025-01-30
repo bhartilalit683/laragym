@@ -1,37 +1,31 @@
-trigger:
-  branches:
-    include:
-      - main  # Specify your branch here
 
-pool:
-  name: 'windows'  # Use the agent pool you created
+# Install PHP and Composer
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
 
-steps:
-  - powershell: |
-      # Install Composer (if not already installed)
-      if (-not (Test-Path "C:\Tools\Composer\composer.phar")) {
-          $env:COMPOSER_HOME = "C:\Tools\Composer"
-          Invoke-WebRequest -Uri https://getcomposer.org/installer -OutFile "composer-setup.php"
-          php composer-setup.php
-          php -r "unlink('composer-setup.php');"
-          Move-Item composer.phar C:\Tools\Composer\composer.phar
-      }
-      # Add Composer to PATH if it's not already
-      [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\Composer", [System.EnvironmentVariableTarget]::Machine)
-    displayName: 'Install Composer'
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Install PHP and Composer
+      sudo apt-get install -y php php-cli php-mbstring php-xml composer
 
-  - powershell: |
-      # Install Laravel dependencies using Composer
-      composer install --no-interaction --prefer-dist
-    displayName: 'Install Composer Dependencies'
+      # Clone the repo (if needed)
+      git clone https://github.com/your-username/laragym.git
+      cd laragym
 
-  - powershell: |
-      # Run Laravel commands (if needed)
-      php artisan key:generate
+      # Install Composer dependencies
+      composer install
+
+      # Set the right permissions for storage
+      sudo chown -R $USER:www-data storage bootstrap/cache
+      sudo chmod -R 775 storage bootstrap/cache
+
+      # Run migrations
       php artisan migrate --force
-    displayName: 'Run Laravel Commands'
-
-  # Publish build artifacts
-  - publish: $(Build.ArtifactStagingDirectory)
-    artifact: drop
-    displayName: 'Publish Build Artifacts'
+      php artisan db:seed --force
+      
+      # Clear cache and optimize
+      php artisan config:cache
+      php artisan route:cache
