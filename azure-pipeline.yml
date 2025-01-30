@@ -28,18 +28,18 @@ jobs:
 
           # Clone the repository if not already cloned
           if [ ! -d "/home/ubuntu/laragym" ]; then
-            git clone https://github.com/your-username/laragym.git $HOME/laragym  # Replace with your repository URL
+            git clone https://github.com/bhartilalit683/laragym.git /home/ubuntu/laragym  # Replace with your repository URL
           fi
           
           # Navigate to the Laravel app directory
-          cd $HOME/laragym
+          cd /home/ubuntu/laragym
 
           # Install Laravel dependencies via Composer
           composer install --no-dev --optimize-autoloader
 
           # Set correct folder permissions for Laravel storage and cache
-          sudo chown -R www-data:www-data $HOME/laragym/storage $HOME/laragym/bootstrap/cache
-          sudo chmod -R 775 $HOME/laragym/storage $HOME/laragym/bootstrap/cache
+          sudo chown -R www-data:www-data $HOME/laragym/storage /home/ubuntu/laragym/bootstrap/cache
+          sudo chmod -R 775 $HOME/laragym/storage $/home/ubuntu/laragym/bootstrap/cache
 
           # Run Laravel migrations and optimize the application
           php artisan migrate --force
