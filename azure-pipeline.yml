@@ -1,41 +1,35 @@
 trigger:
-- main
+  branches:
+    include:
+      - main  # Specify your branch here
 
 pool:
-  name: 'windows'  # Use the name of your agent pool
+  name: 'MyAgentPool'  # Use the agent pool you created
 
-jobs:
-- job: Build
-  steps:
+steps:
+  - powershell: |
+      # Install PHP (using Chocolatey)
+      choco install php --version=7.4.3 -y
+      $env:PATH += ";C:\tools\php"
+    displayName: 'Install PHP'
 
-    # Step 1: Install PHP
-    - task: UsePHP@0
-      inputs:
-        version: '7.x'
+  - powershell: |
+      # Install Composer
+      $env:COMPOSER_HOME = "C:\Tools\Composer"
+      Invoke-WebRequest -Uri https://getcomposer.org/installer -OutFile "composer-setup.php"
+      php composer-setup.php
+      php -r "unlink('composer-setup.php');"
+      Move-Item composer.phar C:\Tools\Composer\composer.phar
+      $env:PATH += ";C:\Tools\Composer"
+    displayName: 'Install Composer'
 
-    # Step 2: Install Composer (for Laravel)
-    - script: |
-        echo "Installing Composer..."
-        curl -sS https://getcomposer.org/installer | php
-      displayName: 'Install Composer'
+  - powershell: |
+      # Install Laravel dependencies
+      composer install --no-interaction --prefer-dist
+    displayName: 'Install Composer Dependencies'
 
-    # Step 3: Install Dependencies
-    - script: |
-        php composer.phar install
-      displayName: 'Install PHP Dependencies'
-
-    # Step 4: Run Tests (optional)
-    - script: |
-        php artisan test
-      displayName: 'Run Laravel Tests'
-
-    # Step 5: Build Artifacts
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: '**/*'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    
-    # Step 6: Publish Artifacts (so it can be used by the release pipeline)
-    - publish: $(Build.ArtifactStagingDirectory)
-      artifact: drop
+  - powershell: |
+      # Run Laravel commands
+      php artisan key:generate
+      php artisan migrate --force
+    displayName: 'Run Laravel Commands'
