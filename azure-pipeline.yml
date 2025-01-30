@@ -1,0 +1,41 @@
+trigger:
+- main
+
+pool:
+  name: 'windows'  # Use the name of your agent pool
+
+jobs:
+- job: Build
+  steps:
+
+    # Step 1: Install PHP
+    - task: UsePHP@0
+      inputs:
+        version: '7.x'
+
+    # Step 2: Install Composer (for Laravel)
+    - script: |
+        echo "Installing Composer..."
+        curl -sS https://getcomposer.org/installer | php
+      displayName: 'Install Composer'
+
+    # Step 3: Install Dependencies
+    - script: |
+        php composer.phar install
+      displayName: 'Install PHP Dependencies'
+
+    # Step 4: Run Tests (optional)
+    - script: |
+        php artisan test
+      displayName: 'Run Laravel Tests'
+
+    # Step 5: Build Artifacts
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: '**/*'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    
+    # Step 6: Publish Artifacts (so it can be used by the release pipeline)
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: drop
