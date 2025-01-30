@@ -4,13 +4,11 @@ trigger:
       - main  # Trigger the pipeline when pushing to the main branch (adjust as necessary)
 
 pool:
-  name: windows  # The agent pool that runs the pipeline (you can use a hosted agent or a self-hosted agent)
+  name: ubuntu-latest  # Use a Linux agent pool for the build environment (you can use Ubuntu-based hosted agents)
 
 jobs:
   - job: BuildAndDeploy
     displayName: 'Build and Deploy Laravel Application to EC2'
-    pool:
-      name: windows  # Use the agent pool for the build environment (this should match your agent pool)
     steps:
 
       # Step 1: Checkout the repository
@@ -30,7 +28,7 @@ jobs:
 
           # Clone the repository if not already cloned
           if [ ! -d "$HOME/laragym" ]; then
-            git clone https://github.com/bhartilalit683/laragym.git $HOME/laragym  # Replace with your repository URL
+            git clone https://github.com/your-username/laragym.git $HOME/laragym  # Replace with your repository URL
           fi
           
           # Navigate to the Laravel app directory
@@ -62,17 +60,7 @@ jobs:
           publishLocation: 'Container'
         displayName: 'Publish Artifacts'
 
-            # Set correct permissions on the server
-            sudo chown -R www-data:www-data /var/www/laragym
-            sudo chmod -R 775 /var/www/laragym/storage /var/www/laragym/bootstrap/cache
-
-            # Run Laravel migrations, clear cache, and optimize
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-
-            # Restart Nginx and PHP to apply changes
-            sudo systemctl restart nginx
-            sudo systemctl restart php7.4-fpm  # Replace with the correct PHP version
-        displayName: 'Deploy to EC2 Instance'
+      # Step 4: Deploy to EC2 Instance via SSH
+      - task: SSH@0
+        inputs:
+          sshEndpoint: 'ec2-ssh-co
