@@ -8,10 +8,14 @@ pool:
 
 steps:
   - powershell: |
-      # Install PHP (using Chocolatey)
-      choco install php --version=7.4.3 -y
-      $env:PATH += ";C:\tools\php"
-    displayName: 'Install PHP'
+      # Install PHP manually
+      Invoke-WebRequest -Uri https://windows.php.net/downloads/releases/php-7.4.3-nts-Win32-vc15-x64.zip -OutFile "php.zip"
+      Expand-Archive -Path "php.zip" -DestinationPath "C:\PHP"
+      Remove-Item "php.zip"  # Clean up the zip file
+
+      # Add PHP to system PATH
+      [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\PHP", [System.EnvironmentVariableTarget]::Machine)
+    displayName: 'Install PHP Manually'
 
   - powershell: |
       # Install Composer
@@ -33,3 +37,8 @@ steps:
       php artisan key:generate
       php artisan migrate --force
     displayName: 'Run Laravel Commands'
+
+  # Publish build artifacts
+  - publish: $(Build.ArtifactStagingDirectory)
+    artifact: drop
+    displayName: 'Publish Build Artifacts'
