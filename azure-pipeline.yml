@@ -4,7 +4,7 @@ trigger:
       - main  # Trigger the pipeline when pushing to the main branch (adjust as necessary)
 
 pool:
-  name: windows  # Use a Linux agent pool for the build environment (you can use Ubuntu-based hosted agents)
+  name: 'windows'  # Use a Linux agent pool for the build environment (you can use Ubuntu-based hosted agents)
 
 jobs:
   - job: BuildAndDeploy
