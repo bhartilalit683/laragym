@@ -4,36 +4,29 @@ trigger:
       - main  # Specify your branch here
 
 pool:
-  name: 'windows'  # Use the agent pool you created
+  name: 'MyAgentPool'  # Use the agent pool you created
 
 steps:
   - powershell: |
-      # Install PHP manually
-      Invoke-WebRequest -Uri https://windows.php.net/downloads/releases/php-7.4.3-nts-Win32-vc15-x64.zip -OutFile "php.zip"
-      Expand-Archive -Path "php.zip" -DestinationPath "C:\PHP"
-      Remove-Item "php.zip"  # Clean up the zip file
-
-      # Add PHP to system PATH
-      [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\PHP", [System.EnvironmentVariableTarget]::Machine)
-    displayName: 'Install PHP Manually'
-
-  - powershell: |
-      # Install Composer
-      $env:COMPOSER_HOME = "C:\Tools\Composer"
-      Invoke-WebRequest -Uri https://getcomposer.org/installer -OutFile "composer-setup.php"
-      php composer-setup.php
-      php -r "unlink('composer-setup.php');"
-      Move-Item composer.phar C:\Tools\Composer\composer.phar
-      $env:PATH += ";C:\Tools\Composer"
+      # Install Composer (if not already installed)
+      if (-not (Test-Path "C:\Tools\Composer\composer.phar")) {
+          $env:COMPOSER_HOME = "C:\Tools\Composer"
+          Invoke-WebRequest -Uri https://getcomposer.org/installer -OutFile "composer-setup.php"
+          php composer-setup.php
+          php -r "unlink('composer-setup.php');"
+          Move-Item composer.phar C:\Tools\Composer\composer.phar
+      }
+      # Add Composer to PATH if it's not already
+      [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools\Composer", [System.EnvironmentVariableTarget]::Machine)
     displayName: 'Install Composer'
 
   - powershell: |
-      # Install Laravel dependencies
+      # Install Laravel dependencies using Composer
       composer install --no-interaction --prefer-dist
     displayName: 'Install Composer Dependencies'
 
   - powershell: |
-      # Run Laravel commands
+      # Run Laravel commands (if needed)
       php artisan key:generate
       php artisan migrate --force
     displayName: 'Run Laravel Commands'
