@@ -60,7 +60,3 @@ jobs:
           publishLocation: 'Container'
         displayName: 'Publish Artifacts'
 
-      # Step 4: Deploy to EC2 Instance via SSH
-      - task: SSH@0
-        inputs:
-          sshEndpoint: 'ec2-ssh-co
