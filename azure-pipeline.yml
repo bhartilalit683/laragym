@@ -1,30 +1,90 @@
-# Install PHP and Composer
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
+trigger:
+  branches:
+    include:
+      - main  # Trigger the pipeline when pushing to the main branch (adjust as necessary)
 
-- task: Bash@3
-  inputs:
-    targetType: 'inline'
-    script: |
-      # Install PHP and Composer
-      sudo apt-get install -y php php-cli php-mbstring php-xml composer
+pool:
+  name: windows  # The agent pool that runs the pipeline (you can use a hosted agent or a self-hosted agent)
 
-      # Clone the repo (if needed)
-      git clone https://github.com/bhartilalit683/laragym.git
-      cd laragym
+jobs:
+  - job: BuildAndDeploy
+    displayName: 'Build and Deploy Laravel Application to EC2'
+    pool:
+      name: windows  # Use the agent pool for the build environment (this should match your agent pool)
+    steps:
 
-      # Install Composer dependencies
-      composer install
+      # Step 1: Checkout the repository
+      - task: Checkout@1
+        displayName: 'Checkout code'
 
-      # Set the right permissions for storage
-      sudo chown -R $USER:www-data storage bootstrap/cache
-      sudo chmod -R 775 storage bootstrap/cache
+      # Step 2: Install dependencies and build assets
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+        displayName: 'Install Composer (for Laravel)'
 
-      # Run migrations
-      php artisan migrate --force
-      php artisan db:seed --force
-      
-      # Clear cache and optimize
-      php artisan config:cache
-      php artisan route:cache
+      - bash: |
+          # Install PHP and necessary extensions
+          sudo apt-get update -y
+          sudo apt-get install -y nginx curl git unzip php7.4 php7.4-fpm php7.4-mbstring php7.4-xml php7.4-bcmath php7.4-curl php7.4-mysql composer
+
+          # Clone the repository if not already cloned
+          if [ ! -d "$HOME/laragym" ]; then
+            git clone https://github.com/bhartilalit683/laragym.git $HOME/laragym  # Replace with your repository URL
+          fi
+          
+          # Navigate to the Laravel app directory
+          cd $HOME/laragym
+
+          # Install Laravel dependencies via Composer
+          composer install --no-dev --optimize-autoloader
+
+          # Set correct folder permissions for Laravel storage and cache
+          sudo chown -R www-data:www-data $HOME/laragym/storage $HOME/laragym/bootstrap/cache
+          sudo chmod -R 775 $HOME/laragym/storage $HOME/laragym/bootstrap/cache
+
+          # Run Laravel migrations and optimize the application
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+          # Build frontend assets (if any)
+          npm install
+          npm run prod
+        displayName: 'Install PHP, Composer, Build Dependencies & Assets'
+
+      # Step 3: Build artifacts (if any), such as compiled assets, environment file, etc.
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: $(Build.SourcesDirectory)/laragym
+          ArtifactName: 'laragym-artifact'
+          publishLocation: 'Container'
+        displayName: 'Publish Artifacts'
+
+      # Step 4: Deploy to EC2 instance using SSH
+      - task: SSH@0
+        inputs:
+          sshEndpoint: 'your-ssh-service-connection'  # Configure the SSH service connection in Azure DevOps
+          runOptions: 'inline'
+          inline: |
+            echo "Running deployment script on EC2 server"
+
+            # Pull the latest code and deploy
+            cd /var/www/laragym
+            git pull origin main  # Replace 'main' with the branch you are deploying from
+
+            # Set correct permissions on the server
+            sudo chown -R www-data:www-data /var/www/laragym
+            sudo chmod -R 775 /var/www/laragym/storage /var/www/laragym/bootstrap/cache
+
+            # Run Laravel migrations, clear cache, and optimize
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            # Restart Nginx and PHP to apply changes
+            sudo systemctl restart nginx
+            sudo systemctl restart php7.4-fpm  # Replace with the correct PHP version
+        displayName: 'Deploy to EC2 Instance'
