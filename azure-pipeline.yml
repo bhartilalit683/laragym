@@ -62,14 +62,6 @@ jobs:
           publishLocation: 'Container'
         displayName: 'Publish Artifacts'
 
-      # Step 4: Deploy to EC2 instance using SSH
-      - task: SSH@0
-        inputs:
-          sshEndpoint: 'your-ssh-service-connection'  # Configure the SSH service connection in Azure DevOps
-          runOptions: 'inline'
-          inline: |
-            echo "Running deployment script on EC2 server"
-
             # Pull the latest code and deploy
             cd /var/www/laragym
             git pull origin main  # Replace 'main' with the branch you are deploying from
